@@ -1,0 +1,452 @@
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            //      Model for products starts
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    
+    const Product = require('../models/product');
+    const Order = require('../models/order');
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            //      Model for products ends
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                //      shop Controller Starts
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    // fetch all the products
+    exports.getProducts = (req, res, next) => {
+        
+        // MongoDB
+        // Product.getProducts()
+        
+        // Mongoose
+        Product.find()
+           
+            .then( (products) => {
+                
+                res.render('shop/product-list', {
+                    prods: products,
+                    pageTitle: 'All Products',
+                    path: '/products',
+                    // isAuthenticated: req.session.isLoggedIn
+                });
+
+            } )
+            .catch( (err) => {
+                console.log(err);
+            } )
+
+        ;
+
+
+        // Sequelize
+        // Product.findAll()
+        //     .then((products) => {
+        //         res.render('shop/product-list', {
+        //             prods: products,
+        //             pageTitle: 'All Products',
+        //             path: '/products'
+        //         });
+        //     })
+        //     .catch((err) => { console.log(err); })
+        // ;
+
+        // MySql
+        // Product.getProducts()
+            
+        //     .then( ([products, productsfield]) => {
+
+        //         res.render('shop/product-list', {
+        //             prods: products,
+        //             pageTitle: 'All Products',
+        //             path: '/products'
+        //         });
+
+        //     } )
+        //     .catch( (err) => {
+
+        //     } )
+        // ;
+    };
+
+    // get individual products
+    exports.getProduct = (req, res, next) => {
+        const productId = req.params.id;
+    
+        // MongoDB
+        // Product.getProduct(productId)
+
+        // Mongoose
+        Product.findById(productId)
+            
+            .then( (product) => {
+                
+                res.render('shop/product-detail', {
+                    product: product, 
+                    pageTitle: product.title, 
+                    path: '/products',
+                    // isAuthenticated: req.session.isLoggedIn     
+                });
+                
+            } )
+            .catch( (err) => {
+            
+            } )
+        ;
+
+
+        // Sequelize
+        // Product.findByPk(productId)
+        //     .then( (product) => {
+        //         res.render('shop/product-detail', {
+        //             product: product, 
+        //             pageTitle: product.title, 
+        //             path: '/products'
+        //         });
+        //     } )
+        //     .catch( (err) => {
+        //         // console.log(err);
+        //     } )
+        // ;
+
+
+        // MySQL
+        // Product.getProduct(productId)
+        //     .then( ([product, field]) => {
+        //         res.render('shop/product-detail', {
+        //             product: product[0], 
+        //             pageTitle: product[0].title, 
+        //             path: '/products'
+        //         });
+        //     } )
+        //     .catch( (err) => {console.log(err, 'shop.js controller err');} )
+        // ;
+       
+    }
+
+    // fetch all the products for index/home page
+    exports.getIndex = (req, res, next) => {
+
+        // MongoDB
+        // Product.getProducts()
+        
+        // Mongoose
+        Product.find()
+            
+            .then( (products) => {
+                
+                res.render('shop/index', {
+                    prods: products,
+                    pageTitle: 'Shop',
+                    path: '/',
+                    // isAuthenticated: req.session.isLoggedIn,
+                    // csrfToken: req.csrfToken()
+                });
+
+            } )
+            .catch( (err) => {
+                console.log(err);
+            } )
+
+        ;
+
+        
+        // Sequelize
+        // Product.findAll()
+        //     .then((products) => {
+        //         res.render('shop/index', {
+        //             prods: products,
+        //             pageTitle: 'Shop',
+        //             path: '/'
+        //         });
+        //     })
+        //     .catch((err) => { console.log(err); })
+        // ;
+
+        // MySql
+        // Product.getProducts()
+            
+        //     .then( ([products, productsfield]) => {
+
+        //         res.render('shop/index', {
+        //             prods: products,
+        //             pageTitle: 'Shop',
+        //             path: '/'
+        //         });
+
+        //     } )
+        //     .catch( (err) => {
+
+        //     } )
+        // ;
+    };
+
+    // get user cart
+    exports.getCart = (req, res, next) => {
+
+        // mongoDB
+        // req.user.getCart()
+           
+        //     .then((products) => {
+                
+        //         res.render('shop/cart', {
+        //             path: '/cart',
+        //             pageTitle: 'Your Cart',
+        //             products : products
+        //         });
+
+        //     })
+        //     .catch()
+        // ;
+
+        //Mongoose
+        req.user
+            .populate('cart.items.productId')
+            .then(user => {
+                
+                const products = user.cart.items;
+                
+                res.render('shop/cart', {
+                    path: '/cart',
+                    pageTitle: 'Your Cart',
+                    products: products,
+                    // isAuthenticated: req.session.isLoggedIn
+                });
+
+            })
+            .catch(err => console.log(err));
+
+        // Sequelize
+        // fetch the cart which belongs to the user using middleware and Sequelize
+        // req.user.getCart()
+        //     .then( (cart) => {
+
+        //         // fetch all the products which belongs to the cart using relationship
+        //         return cart.getProducts()
+        //             .then( (products) => {
+        //                 res.render('shop/cart', {
+        //                     path: '/cart',
+        //                     pageTitle: 'Your Cart',
+        //                     products : products
+        //                 });
+        //             } )
+        //             .catch( (err) => {} );
+        //         ;
+        //     } )
+        //     .catch( (err) => {} )
+        // ;
+
+
+        // res.render('shop/cart', {
+        //     path: '/cart',
+        //     pageTitle: 'Your Cart'
+        // });
+    };
+
+    // add product to cart
+    exports.postCart = (req, res, next) => {
+        const productId = req.body.productId;
+        
+        // MongoDB
+        // Product.getProduct(productId)
+
+        // Mongoose
+        Product.findById(productId)
+            
+            .then( (product) => {
+                // console.log(product, 'shop.js postCart product', req.user );
+                return req.user.addToCart(product);
+            } )
+            .then((result) => {
+                // console.log(result, 'shop.js postCart result' );
+                res.redirect('/cart');
+            })
+            .catch( (err) => {
+                console.log(err, 'shop.js postCart err');
+            })
+        ;
+
+
+
+        // let userCart;
+        // let newQuantity = 1;
+        
+        // Sequelize
+        // fetch the cart which belongs to the user using middleware and Sequelize
+        // req.user.getCart()
+        //     .then( (cart) => {
+        //         userCart = cart;
+
+        //         // fetch the product if exists in the cart
+        //         return cart.getProducts( { where : { id : productId } } );
+        //     } )
+        //     .then( (products) => {
+                
+        //         let product;
+        //         if ( products.length > 0 ) {
+        //             product = products[0];
+        //         }
+
+        //         // if product already exists in the cart then just increment the quantity of that product in Cart
+        //         if(product){
+        //             const currentQuantity = product.cartItem.quantity;
+        //             newQuantity = currentQuantity + 1;
+        //             return product;
+
+        //             // return  userCart.addProduct(product, {
+        //             //     through : {quantity : newQuantity}
+        //             // });
+        //         }
+                
+        //         return Product.findByPk(productId);
+        //         // res.redirect('/cart');
+        //     } )
+            
+        //         // Add the new product to the cart using Sequelize function addProduct() and set the quantity of product
+        //         //  as 1 through relationship 
+        //     .then( (product) => {
+                
+        //         return userCart.addProduct(product, {
+        //             through : {quantity : newQuantity}
+        //         });
+
+        //     } )
+        //     .then( () => {
+        //         res.redirect('/cart');
+        //     } ) 
+        //     .catch( (err) => {} );
+        // ;
+
+        // Product.getProduct(productId, product => {
+        //     Cart.addProduct(productId, product.price);
+        // });
+        
+    };
+
+    // delete product from the cart items for the user
+    exports.deleteCartItem = (req, res, next) => {
+        const productId = req.body.productId;
+
+        // console.log('deleteCartItem', productId);
+        // MongoDB
+        // req.user.deleteCartItem(productId)
+        
+        //Mongoose 
+        req.user
+            .removeFromCart(productId)
+            .then( (result) => {
+                    // console.log('result', result);
+                    res.redirect('/cart');
+                })
+                .catch((err) => {});
+        ; 
+
+
+        // Sequelize
+        // req.user.getCart()
+        //     .then( (cart) => {
+        //         return cart.getProducts( { where : { id : productId }  } );
+        //     } ) 
+        //     .then( (products) => { 
+        //         const product = products[0];
+        //         return product.cartItem.destroy();
+        //     } )
+        //     .then( (result) => {
+        //         res.redirect('/cart');
+        //     } )
+        //     .catch( (err) => { } )
+
+        // ;
+            
+        // const productPrice = req.body.productPrice;
+        // Cart.deleteProduct(productId, productPrice);
+    };
+
+    // add order to the users cart
+    exports.postOrder = (req, res, next) => {
+        // MongoDB
+        // req.user.postOrder()
+
+        // MOngoose
+        // req.user.addOrder()
+
+        req.user
+            .populate('cart.items.productId')
+            // .execPopulate()
+                
+                .then(user => {
+                    
+                    const products = user.cart.items.map(i => {
+                        return {
+                            quantity: i.quantity,
+                            
+                            product: {
+                                ...i.productId._doc
+                            }
+                        }
+                    });
+
+                    const order = new Order({
+
+                        user : {
+                            // name: req.user.name,
+                            email: req.user.email,
+                            userId: req.user
+                        },
+
+                        products: products 
+                    });
+
+                    return order.save();
+                })
+               
+                .then(result => {
+                    return req.user
+                        .clearCart();
+                })
+              
+                .then((result) => {
+                    res.redirect('/orders');
+                } )
+                .catch((err) => {})
+        ;
+    };
+
+
+    exports.getOrders = (req, res, next) => {
+
+        // MongoDB
+        // req.user.getOrders()
+           
+        // Mongoose
+        Order.find({ 'user.userId': req.user._id })
+            .then((orders) => {
+               
+                res.render('shop/orders', {
+                    path: '/orders',
+                    pageTitle: 'Your Orders',
+                    orders : orders,
+                    // isAuthenticated: req.session.isLoggedIn
+                });
+
+            })
+            .catch( (err) => {} )
+        ;
+
+
+        // res.render('shop/orders', {
+        //     path: '/orders',
+        //     pageTitle: 'Your Orders'
+        // });
+    };
+
+    // exports.getCheckout = (req, res, next) => {
+    //     res.render('shop/checkout', {
+    //         path: '/checkout',
+    //         pageTitle: 'Checkout'
+    //     });
+    // };
+
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+                //       Shop Controller Ends
+// ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
