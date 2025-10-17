@@ -1,16 +1,13 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     //      Import Files Ans Set Data Starts
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-  
+  	require('dotenv').config();
+
 	const path = require('path');
+	const rootDir = require('./utils/path');
 
 	// npm install --save express
 	const express = require('express');
-
-	const rootDir = require('./utils/path');
-
-	const bodyParser = require('body-parser');
-
 	const app = express();
 
 
@@ -31,9 +28,13 @@
 		// npm install --save connect-express-session
 		const MongoDBStore = require('connect-mongodb-session')(session);
 
-		const username = encodeURIComponent("NodeLearningUser");
-		const password = encodeURIComponent("devnaren");
-		const MONGODB_URI = `mongodb+srv://${username}:${password}@nodelearning.nvpzxls.mongodb.net/shop`;
+		const username = encodeURIComponent(process.env.MONGODB_USERNAME);
+		const password = encodeURIComponent(process.env.MONGODB_PASSWORD);
+		const cluster = process.env.MONGODB_CLUSTER;
+		const dbName = process.env.MONGODB_DB_NAME;
+
+		const MONGODB_URI = `mongodb+srv://${username}:${password}@${cluster}/${dbName}`;
+
 
 		const store = new MongoDBStore({
 			uri: MONGODB_URI,
@@ -54,15 +55,26 @@
 	// npm install --save multer
 	const multer = require('multer');
 	
+	// const fileStorage = multer.diskStorage({
+	// 	destination: (req, file, cb) => {
+	// 		cb(null, 'images');
+	// 	},
+
+	// 	filename: (req, file, cb) => {
+	// 		cb(null, new Date().toISOString() + '-' + file.originalname);
+	// 	}
+	// })
+
 	const fileStorage = multer.diskStorage({
 		destination: (req, file, cb) => {
 			cb(null, 'images');
 		},
-
 		filename: (req, file, cb) => {
-			cb(null, new Date().toISOString() + '-' + file.originalname);
+			const timestamp = new Date().toISOString().replace(/:/g, '-');
+			cb(null, timestamp + '-' + file.originalname);
 		}
-	})
+	});
+
 
 	const fileFilter = (req, file, cb) => {
 		if(file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
@@ -106,20 +118,24 @@
 
 	// Routes
 
+	// console.log('adminRoutes');
+
     const adminRoutes = require('./routes/admin');
+
+	console.log('shopRoutes');
 
     const shopRoutes = require('./routes/shop');
 
+	// console.log('authRoutes');
+
 	const authRoutes = require('./routes/auth');
 
-	// Models
-
-	const User = require('./models/user'); 
-
-	const errorController = require('./controllers/error');
 
 	// Controllers
 	const errorController = require('./controllers/errors');
+
+	// Models
+	const User = require('./models/user'); 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     //  Import MVC ends
@@ -130,16 +146,18 @@
                         //      Middleware and Session Starts
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-
+	const bodyParser = require('body-parser');
 	app.use(bodyParser.urlencoded({ extended: false }));
 
 	
+	// console.log('multer', fileStorage, fileFilter);
 	app.use(
-		multer({ storage: fileStorage, fileFilter: fileFilter }).single('images')
+		multer({ storage: fileStorage, fileFilter: fileFilter }).single('image')
 	);
 	
 	app.use(express.static(path.join(rootDir, 'public')));
 
+	// console.log('/images');
 	app.use(
 		'/images', express.static(path.join(rootDir, 'images'))
 	);
@@ -148,7 +166,7 @@
 		
 		session({
 			
-			secret : '6875e67519e949d6c64036d5key',
+			secret : process.env.SESSION_SECRET,
 			resave: false,
 			saveUninitialized: false,
 			store: store
@@ -163,6 +181,7 @@
 	app.use((req, res, next) => {
 		res.locals.isAuthenticated = req.session.isLoggedIn;
 		res.locals.csrfToken = req.csrfToken();
+		// console.log('res.locals.isAuthenticated ', res.locals.isAuthenticated, ' res.locals.csrfToken ', res.locals.csrfToken);
 		next();
 	});
 
@@ -199,15 +218,31 @@
 		// next();
 	});
 
+	// console.log('admin adminRoutes');
 	app.use('/admin', adminRoutes);
 
+	// console.log('shop shopRoutes');
 	app.use(shopRoutes);
 
+	// console.log('auth authRoutes');
 	app.use(authRoutes);
 
+	// console.log('error /500');
 	app.get('/500', errorController.get500);
 
+	// console.log(' error /404');
 	app.use(errorController.get404);
+
+	// console.log('error /500');
+	app.use((error, req, res, next) => {
+		// res.status(error.httpStatusCode).render(...);
+		// res.redirect('/500');
+		res.status(500).render('500', {
+			pageTitle: 'Error!',
+			path: '/500',
+			isAuthenticated: req.session ? req.session.isLoggedIn : false
+		});
+	});
 
     
      
@@ -250,8 +285,8 @@
 			// 	})
 			// 	.catch(err => console.log(err))
 			// ;
-
-			app.listen(3000);
+			const PORT = process.env.PORT || 3000;
+			app.listen(PORT);
 		})
 		.catch(err => console.log(err))
 	;

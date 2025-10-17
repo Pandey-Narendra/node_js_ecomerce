@@ -34,15 +34,17 @@
     };
 
     exports.postAddProduct = (req, res, next) => {
-        
+        console.log('postAddProduct');
         const title = req.body.title;
         const price = req.body.price;
         const description = req.body.description;
 
         // const imageUrl = req.body.imageUrl;
         const image = req.file;
+
+        // console.log('req', req);
         if(!image){
-            res.status(422).render('admin/edit-product', {
+            res.status(422).render('admin/add-product', {
                 pageTitle: 'Add Product',
                 path: '/admin/add-product',
                 hasError: true,
@@ -58,7 +60,7 @@
 
         const errors = validationResult(req);
         if(!errors.isEmpty()){
-            return res.status(422).render('admin/edit-product', {
+            return res.status(422).render('admin/add-product', {
                 pageTitle: 'Add Product',
                 path: '/admin/add-product',
                 hasError: true,
@@ -72,7 +74,8 @@
             });
         }
 
-        const imageUrl = image.path;
+        // const imageUrl = image.path; // Use forward slashes for URLs
+        const imageUrl = '/images/' + image.filename;
 
         // Mongoose
         const product = new Product({
@@ -82,6 +85,8 @@
             imageUrl: imageUrl,
             userId: req.user
         });
+
+        console.log('product', product, imageUrl);
 
         product
             .save()
@@ -164,9 +169,11 @@
                 });
 
             } )
-            .catch( (err) => {
-                console.log(err);
-            } )
+            .catch(err => {
+                const error = new Error(err);
+                error.httpStatusCode = 500;
+                return next(error);
+            })
 
         ;
 
@@ -320,7 +327,8 @@
                 // product.imageUrl = imageUrl;
                 if(image){
                     fileHelper.deleteFile(product.imageUrl);
-                    product.imageUrl = image.path;
+                    // product.imageUrl = image.path;
+                    product.imageUrl = '/images/' + image.filename;
                 }
 
                 return product
@@ -383,7 +391,8 @@
     };
 
     exports.deleteProduct = (req, res, next) => {
-        const productId = req.body.productId;
+        // const productId = req.body.productId;
+        const productId = req.params.productId; 
         
         // MongoDB
         // Product.deleteProduct(productId)
@@ -399,7 +408,7 @@
                 }
 
                 fileHelper.deleteFile(product.imageUrl);
-                return Product.deleteOne({id : productId, userId: req.user._id})
+                return Product.deleteOne({_id : productId, userId: req.user._id})
             })
             .then( () => {
                 // res.redirect('/admin/products');
