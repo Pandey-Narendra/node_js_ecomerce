@@ -122,7 +122,7 @@
 
     const adminRoutes = require('./routes/admin');
 
-	console.log('shopRoutes');
+	// console.log('shopRoutes');
 
     const shopRoutes = require('./routes/shop');
 
@@ -196,6 +196,7 @@
 		try {
 			
 			if(!req.session.user){
+				// console.log("no user");
 				return next();
 			}
 
@@ -203,7 +204,8 @@
 			const user = await User.findById(req.session.user._id);
 			
 			if (!user) {
-				throw new Error('User not found');
+				// throw new Error('User not found');
+				return next();
 			}
 
 			req.user = user;
@@ -211,7 +213,7 @@
 		} 
 		catch (err) {
 			// console.error('User Middleware Error:', err);
-			next(err);
+			next(new Error(err));
 		}
 		
 

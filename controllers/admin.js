@@ -34,7 +34,7 @@
     };
 
     exports.postAddProduct = (req, res, next) => {
-        console.log('postAddProduct');
+        // console.log('postAddProduct');
         const title = req.body.title;
         const price = req.body.price;
         const description = req.body.description;
@@ -86,7 +86,7 @@
             userId: req.user
         });
 
-        console.log('product', product, imageUrl);
+        // console.log('product', product, imageUrl);
 
         product
             .save()

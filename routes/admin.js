@@ -19,10 +19,10 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     //      Controllers Starts
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-    console.log('admin controller', 'get/add-product', isAuth);
+    // console.log('admin controller', 'get/add-product', isAuth);
     router.get('/add-product', isAuth, adminController.getAddProduct );
 
-    console.log('admin controller', 'post/add-product', isAuth);
+    // console.log('admin controller', 'post/add-product', isAuth);
     // router.post('/add-product', isAuth,  adminController.postAddProduct );
     router.post(
 
@@ -80,7 +80,7 @@
     );
 
     // router.post('/delete-product/', isAuth,  adminController.deleteProduct );
-    router.delete('/product/:productId', adminController.deleteProduct);
+    router.delete('/product/:productId', isAuth, adminController.deleteProduct);
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
                     //      Controllers Ends

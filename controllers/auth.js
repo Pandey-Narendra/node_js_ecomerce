@@ -132,7 +132,7 @@ exports.postLogin = (req, res, next) => {
 					req.session.user = user;
 
 					return req.session.save(err => {
-						console.log(err);
+						// console.log(err);
 						res.redirect('/');
 					});
 				}
@@ -163,7 +163,7 @@ exports.postLogin = (req, res, next) => {
 exports.postLogout = (req, res, next) => {
 	
 	req.session.destroy(err => {
-		console.log(err);
+		// console.log(err);
 		res.redirect('/');
 	});
 };
@@ -304,12 +304,12 @@ exports.postSignup = (req, res, next) => {
 		})
 		.then(result => {
 			res.redirect('/login');
-			// return transporter.sendMail({
-			//   to: email,
-			//   from: 'shop@node-complete.com',
-			//   subject: 'Signup succeeded!',
-			//   html: '<h1>You successfully signed up!</h1>'
-			// });
+			return transporter.sendMail({
+			  to: email,
+			  from: 'pandeynarendra785@gmail.com',
+			  subject: 'Signup succeeded!',
+			  html: '<h1>You successfully signed up!</h1>'
+			});
 		})
 		.catch(err => {
 			const error = new Error(err);
@@ -346,7 +346,7 @@ exports.postReset = (req, res, next) => {
   	
 	crypto.randomBytes(32, (err, buffer) => {
 		if (err) {
-			console.log(err);
+			// console.log(err);
 			return res.redirect('/reset');
 		}
 
@@ -367,7 +367,7 @@ exports.postReset = (req, res, next) => {
 				res.redirect('/');
 					transporter.sendMail({
 					to: req.body.email,
-					from: 'shop@node-complete.com',
+					from: 'pandeynarendra785@gmail.com',
 					subject: 'Password reset',
 					html: `
 						<p>You requested a password reset</p>
@@ -392,16 +392,16 @@ exports.getNewPassword = (req, res, next) => {
 		.then(user => {
 			let message = req.flash('error');
 			if (message.length > 0) {
-			message = message[0];
+				message = message[0];
 			} else {
-			message = null;
+				message = null;
 			}
 			res.render('auth/new-password', {
-			path: '/new-password',
-			pageTitle: 'New Password',
-			errorMessage: message,
-			userId: user._id.toString(),
-			passwordToken: token
+				path: '/new-password',
+				pageTitle: 'New Password',
+				errorMessage: message,
+				userId: user._id.toString(),
+				passwordToken: token
 			});
 		})
 		.catch(err => {

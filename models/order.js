@@ -11,14 +11,21 @@
         products: 
         [
             {
-                product: { type: Object, required: true },
-                quantity: { type: Number, required: true }
+                product:{ 
+                            type: Object, 
+                            required: true
+                        },
+
+                quantity: { 
+                            type: Number, 
+                            required: true 
+                          }
             }
         ],
 
         user: 
         {
-            name: {
+            email: {
                 type: String,
                 required: true
             },

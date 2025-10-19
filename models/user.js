@@ -24,24 +24,28 @@ const userSchema = new Schema({
         type: String,
         required: true
     },
+    
+    resetToken: String,
+  
+    resetTokenExpiration: Date,
 
     cart: {
-        type: {
-            items: [
-                {
-                    productId: {
-                        type: Schema.Types.ObjectId,
-                        ref: 'Product', // tells Mongoose to populate from the Product mode
-                        required: true
-                    },
+  
+        items: [    
+            {
+                productId: {
+                    type: Schema.Types.ObjectId,
+                    ref: 'Product', // tells Mongoose to populate from the Product mode
+                    required: true
+                },
 
-                    quantity: {
-                        type: Number,
-                        required: true
-                    }
+                quantity: {
+                    type: Number,
+                    required: true
                 }
-            ]
-        },
+            }
+        ],
+      
 
         // Default value is an empty array of items
         default: { items: [] }

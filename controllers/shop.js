@@ -221,7 +221,7 @@
         // ;
     };
 
-    console.log('getCart controller');
+    // console.log('getCart controller');
     // get user cart
     // exports.getCart = (req, res, next) => {
 
@@ -294,7 +294,7 @@
         try {
             const populatedUser = await req.user.populate('cart.items.productId')
             const products = populatedUser.cart.items || [];
-            console.log('getCart controller products', products);
+            // console.log('getCart controller products', products);
 
             res.render('shop/cart', {
                 path: '/cart',
@@ -302,12 +302,15 @@
                 products: products,
             });
         } catch (err) {
-            console.log('getCart controller error', err);
-            next(err);
+            // console.log('getCart controller error', err);
+            // next(err);
+            const error = new Error(err);
+            error.httpStatusCode = 500;
+            return next(error);
         }
     };
 
-
+    
     // add product to cart
     exports.postCart = (req, res, next) => {
         const productId = req.body.productId;
@@ -433,54 +436,119 @@
         // Cart.deleteProduct(productId, productPrice);
     };
 
-    exports.getCheckout = (req, res, next) => {
-        let products;
-        let total = 0;
-        req.user
-            .populate('cart.items.productId')
-            // .execPopulate()
-            .then(user => {
-                products = user.cart.items;
-                total = 0;
-                products.forEach(p => {
-                    total += p.quantity * p.productId.price;
-                });
+    console.log('getCheckout');
+    // exports.getCheckout = (req, res, next) => {
+    //     let products;
+    //     let total = 0;
+    //     // .execPopulate()
+    //     req.user
+    //         .populate('cart.items.productId')
+    //         .then(user => {
+    //             products = user.cart.items;
+    //             total = 0;
+    //             products.forEach(p => {
+    //                 total += p.quantity * p.productId.price;
+    //             });
 
-                const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+    //             const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
-                return stripe.checkout.sessions.create({
-                    payment_method_types: ['card'],
+    //             console.log('getCheckout', products, total, baseUrl);
 
-                    line_items: products.map(p => {
-                        return {
-                            name: p.productId.title,
-                            description: p.productId.description,
-                            amount: p.productId.price * 100,
-                            currency: 'usd',
-                            quantity: p.quantity
-                        };
-                    }),
+    //             return stripe.checkout.sessions.create({
+    //                 payment_method_types: ['card'],
 
-                    success_url: `${baseUrl}/checkout/success`,
-                    cancel_url: `${baseUrl}/checkout/cancel`
-                });
-            })
-        .then(session => {
-            res.render('shop/checkout', {
-                path: '/checkout',
-                pageTitle: 'Checkout',
-                products: products,
-                totalSum: total,
-                sessionId: session.id,
-                stripePublicKey: process.env.STRIPE_PUBLIC_KEY
-            });
-        })
-        .catch(err => {
-            const error = new Error(err);
-            error.httpStatusCode = 500;
-            return next(error);
+    //                 line_items: products.map(p => {
+    //                     return {
+    //                         name: p.productId.title,
+    //                         description: p.productId.description,
+    //                         amount: p.productId.price * 100,
+    //                         currency: 'usd',
+    //                         quantity: p.quantity
+    //                     };
+    //                 }),
+
+    //                 success_url: `${baseUrl}/checkout/success`,
+    //                 cancel_url: `${baseUrl}/checkout/cancel`
+    //             });
+    //         })
+    //         .then(session => {
+    //             console.log('getCheckout session', session);
+    //             res.render('shop/checkout', {
+    //                 path: '/checkout',
+    //                 pageTitle: 'Checkout',
+    //                 products: products,
+    //                 totalSum: total,
+    //                 sessionId: session.id,
+    //                 stripePublicKey: process.env.STRIPE_PUBLIC_KEY
+    //             });
+    //         })
+    //         .catch(err => {
+    //             // const error = new Error(err);
+    //             // error.httpStatusCode = 500;
+    //             // return next(error);
+    //             console.log('getCheckout err', err);
+    //         })
+    //     ;
+    // };
+
+exports.getCheckout = async (req, res, next) => {
+    try {
+        // ✅ Populate the 'cart.items.productId' references correctly
+        const userWithCart = await req.user.populate({
+            path: 'cart.items.productId',
+            model: 'Product'
         });
-    };
+
+        const products = userWithCart.cart.items;
+        console.log('🔍 After populate:', products);
+
+        // ✅ Filter out any null products (e.g., deleted products)
+        const validProducts = products.filter(p => p.productId);
+
+        let total = 0;
+        validProducts.forEach(p => {
+            total += p.quantity * p.productId.price;
+        });
+
+        const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
+
+        console.log('✅ Populated products:', validProducts.map(p => p.productId));
+
+        // ✅ Create Stripe session with only valid populated items
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: validProducts.map(p => ({
+                price_data: {
+                    currency: 'usd',
+                    product_data: {
+                        name: p.productId.title,
+                        description: p.productId.description
+                    },
+                    unit_amount: Math.round(p.productId.price * 100) // must be integer
+                },
+                quantity: p.quantity
+            })),
+            mode: 'payment',
+            success_url: `${baseUrl}/checkout/success`,
+            cancel_url: `${baseUrl}/checkout/cancel`
+        });
+
+        res.render('shop/checkout', {
+            path: '/checkout',
+            pageTitle: 'Checkout',
+            products: validProducts,
+            totalSum: total,
+            sessionId: session.id,
+            stripePublicKey: process.env.STRIPE_PUBLIC_KEY
+        });
+
+    } catch (err) {
+        console.error('getCheckout error:', err);
+        next(err);
+    }
+};
+
+
 
     exports.getCheckoutSuccess = (req, res, next) => {
         req.user
@@ -514,99 +582,179 @@
     };
 
 
-
     // add order to the users cart
-    exports.postOrder = (req, res, next) => {
-        // MongoDB
-        // req.user.postOrder()
+// console.log('shop js controller postOrder');
+// exports.postOrder = async (req, res, next) => {
+//     try {
+//         // MongoDB
+//         // req.user.postOrder()
 
-        // MOngoose
-        // req.user.addOrder()
+//         // Mongoose
+//         // req.user.addOrder()
 
-        req.user
-            .populate('cart.items.productId')
-            // .execPopulate()
-                
-                .then(user => {
-                    
-                    const products = user.cart.items.map(i => {
-                        return {
-                            quantity: i.quantity,
-                            
-                            product: {
-                                ...i.productId._doc
-                            }
-                        }
-                    });
+//         // Updated: use async/await instead of execPopulate()
+//         // await req.user.populate('cart.items.productId');
 
-                    const order = new Order({
+//         // const products = req.user.cart.items.map(i => {
+//         //     return {
+//         //         quantity: i.quantity,
+//         //         product: {
+//         //             ...i.productId._doc
+//         //         }
+//         //     };
+//         // });
 
-                        user : {
-                            // name: req.user.name,
-                            email: req.user.email,
-                            userId: req.user
-                        },
+//         const userWithProducts = await req.user.populate({
+//             path: 'cart.items.productId'
+//         });
 
-                        products: products 
-                    });
+//         const products = userWithProducts.cart.items.map(i => {
+//             if (!i.productId) {
+//                 console.warn('Product not found for cart item:', i);
+//                 return null;
+//             }
+//             return {
+//                 quantity: i.quantity,
+//                 product: { ...i.productId._doc }
+//             };
+//         }).filter(Boolean); 
 
-                    return order.save();
-                })
-               
-                .then(result => {
-                    return req.user
-                        .clearCart();
-                })
-              
-                .then((result) => {
-                    res.redirect('/orders');
-                } )
-                .catch((err) => {
-                    const error = new Error(err);
-                    error.httpStatusCode = 500;
-                    return next(error);
-                })
-        ;
-    };
+//         console.log('shop js controller postOrder products', products);
+
+//         const order = new Order({
+//             user: {
+//                 email: req.user.email,
+//                 userId: req.user
+//             },
+//             products: products
+//         });
+
+//         console.log('shop js controller postOrder order', order);
+
+//         await order.save();
+        
+//         console.log('shop js controller postOrder clearcart');
+//         await req.user.clearCart();
+
+//         console.log('shop js controller postOrder redirect /orders');
+//         res.redirect('/orders');
+//     } catch (err) {
+//         // const error = new Error(err);
+//         // error.httpStatusCode = 500;
+//         // return next(error);
+
+//             console.log('shop js controller postOrder redirect /orders');
+//     }
+// };
+
+// console.log('shop js controller getOrders');
+// exports.getOrders = (req, res, next) => {
+
+//     // MongoDB
+//     // req.user.getOrders()
+       
+//     // Mongoose
+//     Order.find({ 'user.userId': req.user._id })
+//         .then((orders) => {
+//             console.log('shop js controller getOrders orders',orders);
+//              console.log('Total Orders:', orders.length);
+
+//         orders.forEach((order, idx) => {
+//             console.log(`Order #${idx + 1}`);
+//             console.log('🧍 User:', order.user);
+//             console.log('📦 Products:', order.products);
+//         });
+
+//             // res.render('shop/orders', {
+//             //     path: '/orders',
+//             //     pageTitle: 'Your Orders',
+//             //     orders : orders,
+//             //     // isAuthenticated: req.session.isLoggedIn
+//             // });
+//         })
+//         .catch(err => {
+//             // const error = new Error(err);
+//             // error.httpStatusCode = 500;
+//             // return next(error);
+//             console.log('shop js controller getOrders error', err);        })
+//     ;
+
+//     // res.render('shop/orders', {
+//     //     path: '/orders',
+//     //     pageTitle: 'Your Orders'
+//     // });
+// };
 
 
-    exports.getOrders = (req, res, next) => {
+// ---------------------------
+// POST ORDER
+// ---------------------------
+exports.postOrder = async (req, res, next) => {
+    try {
+        const userWithProducts = await req.user.populate({
+            path: 'cart.items.productId'
+        });
 
-        // MongoDB
-        // req.user.getOrders()
-           
-        // Mongoose
-        Order.find({ 'user.userId': req.user._id })
-            .then((orders) => {
-               
-                res.render('shop/orders', {
-                    path: '/orders',
-                    pageTitle: 'Your Orders',
-                    orders : orders,
-                    // isAuthenticated: req.session.isLoggedIn
-                });
-
+        const products = userWithProducts.cart.items
+            .map(i => {
+                if (!i.productId) return null;
+                return {
+                    quantity: i.quantity,
+                    product: { ...i.productId._doc }
+                };
             })
-            .catch(err => {
-                const error = new Error(err);
-                error.httpStatusCode = 500;
-                return next(error);
-            })
-        ;
+            .filter(Boolean);
 
+        const order = new Order({
+            user: {
+                email: req.user.email,
+                userId: req.user._id
+            },
+            products: products
+        });
 
-        // res.render('shop/orders', {
-        //     path: '/orders',
-        //     pageTitle: 'Your Orders'
-        // });
-    };
+        await order.save();
+        await req.user.clearCart();
+
+        res.redirect('/orders');
+    } catch (err) {
+        console.log('postOrder error:', err);
+        next(err);
+        // const error = new Error(err);
+        // error.httpStatusCode = 500;
+        // return next(error);
+    }
+};
+
+// ---------------------------
+// GET ORDERS
+// ---------------------------
+exports.getOrders = async (req, res, next) => {
+    try {
+        const orders = await Order.find({ 'user.userId': req.user._id });
+
+        console.log('GET /orders:', orders);
+
+        res.render('shop/orders', {
+            path: '/orders',
+            pageTitle: 'Your Orders',
+            orders: orders || []
+        });
+    } catch (err) {
+        console.log('getOrders error:', err);
+        next(err);
+        // const error = new Error(err);
+        // error.httpStatusCode = 500;
+        // return next(error);
+    }
+};
+
 
 exports.getInvoice = (req, res, next) => {
     const orderId = req.params.orderId;
 
     Order.findById(orderId)
     .then(order => {
-       
         if (!order) {
             return next(new Error('No order found.'));
         }
@@ -635,22 +783,23 @@ exports.getInvoice = (req, res, next) => {
         pdfDoc.text('-----------------------');
         let totalPrice = 0;
         order.products.forEach(prod => {
-        totalPrice += prod.quantity * prod.product.price;
-        pdfDoc
-            .fontSize(14)
-            .text(
-            prod.product.title +
-                ' - ' +
-                prod.quantity +
-                ' x ' +
-                '$' +
-                prod.product.price
-            );
+            totalPrice += prod.quantity * prod.product.price;
+            pdfDoc
+                .fontSize(14)
+                .text(
+                    prod.product.title +
+                    ' - ' +
+                    prod.quantity +
+                    ' x ' +
+                    '$' +
+                    prod.product.price
+                );
         });
         pdfDoc.text('---');
         pdfDoc.fontSize(20).text('Total Price: $' + totalPrice);
 
         pdfDoc.end();
+
         // fs.readFile(invoicePath, (err, data) => {
         //   if (err) {
         //     return next(err);
@@ -662,8 +811,8 @@ exports.getInvoice = (req, res, next) => {
         //   );
         //   res.send(data);
         // });
-        // const file = fs.createReadStream(invoicePath);
 
+        // const file = fs.createReadStream(invoicePath);
         // file.pipe(res);
     })
     .catch(err => next(err));

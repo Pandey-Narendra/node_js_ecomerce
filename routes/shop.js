@@ -18,20 +18,22 @@
                 //      Controllers Starts
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-    console.log('shop routes');
+    // console.log('shop routes');
 
     router.get('/', shopController.getIndex);
 
     router.get('/products', shopController.getProducts);
     router.get('/products/:id', shopController.getProduct);
 
-    console.log('shop routes /cart');
+    // console.log('shop routes /cart');
     router.get('/cart',  isAuth, shopController.getCart);
     router.post('/cart',  isAuth, shopController.postCart);
-    router.post('/delete/cart/item',  isAuth, shopController.deleteCartItem);
-
+    router.post('/cart-delete-item',  isAuth, shopController.deleteCartItem);
+    // console.log('shop routes /orders get');
     router.get('/orders',  isAuth, shopController.getOrders);
+    // console.log('shop routes /orders post');
     router.post('/orders',  isAuth, shopController.postOrder);
+    router.get('/orders/:orderId', isAuth, shopController.getInvoice);
     
     router.get('/checkout', isAuth, shopController.getCheckout);
 
@@ -39,9 +41,8 @@
 
     router.get('/checkout/cancel', shopController.getCheckout);
 
-    router.get('/orders', isAuth, shopController.getOrders);
+    // router.get('/orders', isAuth, shopController.getOrders);
 
-    router.get('/orders/:orderId', isAuth, shopController.getInvoice);
 
 
 // ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
