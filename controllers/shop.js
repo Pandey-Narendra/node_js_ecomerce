@@ -500,7 +500,7 @@ exports.getCheckout = async (req, res, next) => {
         });
 
         const products = userWithCart.cart.items;
-        console.log('🔍 After populate:', products);
+        // console.log('🔍 After populate:', products);
 
         //Filter out any null products (e.g., deleted products)
         const validProducts = products.filter(p => p.productId);
@@ -718,11 +718,11 @@ exports.postOrder = async (req, res, next) => {
 
         res.redirect('/orders');
     } catch (err) {
-        console.log('postOrder error:', err);
-        next(err);
-        // const error = new Error(err);
-        // error.httpStatusCode = 500;
-        // return next(error);
+        // console.log('postOrder error:', err);
+        // next(err);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     }
 };
 
@@ -733,7 +733,7 @@ exports.getOrders = async (req, res, next) => {
     try {
         const orders = await Order.find({ 'user.userId': req.user._id });
 
-        console.log('GET /orders:', orders);
+        // console.log('GET /orders:', orders);
 
         res.render('shop/orders', {
             path: '/orders',
@@ -741,11 +741,11 @@ exports.getOrders = async (req, res, next) => {
             orders: orders || []
         });
     } catch (err) {
-        console.log('getOrders error:', err);
+        // console.log('getOrders error:', err);
         next(err);
-        // const error = new Error(err);
-        // error.httpStatusCode = 500;
-        // return next(error);
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
     }
 };
 
