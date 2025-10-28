@@ -436,7 +436,7 @@
         // Cart.deleteProduct(productId, productPrice);
     };
 
-    console.log('getCheckout');
+    // console.log('getCheckout');
     // exports.getCheckout = (req, res, next) => {
     //     let products;
     //     let total = 0;
@@ -493,7 +493,7 @@
 
 exports.getCheckout = async (req, res, next) => {
     try {
-        // ✅ Populate the 'cart.items.productId' references correctly
+        // Populate the 'cart.items.productId' references correctly
         const userWithCart = await req.user.populate({
             path: 'cart.items.productId',
             model: 'Product'
@@ -502,7 +502,7 @@ exports.getCheckout = async (req, res, next) => {
         const products = userWithCart.cart.items;
         console.log('🔍 After populate:', products);
 
-        // ✅ Filter out any null products (e.g., deleted products)
+        //Filter out any null products (e.g., deleted products)
         const validProducts = products.filter(p => p.productId);
 
         let total = 0;
@@ -512,9 +512,9 @@ exports.getCheckout = async (req, res, next) => {
 
         const baseUrl = process.env.BASE_URL || `${req.protocol}://${req.get('host')}`;
 
-        console.log('✅ Populated products:', validProducts.map(p => p.productId));
+        // console.log('Populated products:', validProducts.map(p => p.productId));
 
-        // ✅ Create Stripe session with only valid populated items
+        // Create Stripe session with only valid populated items
         const session = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
             line_items: validProducts.map(p => ({
