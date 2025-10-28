@@ -2,4 +2,3 @@ node_modules
 .env
 utils\db\database.js
 utils\db\database-mongodb.js
-images/*
